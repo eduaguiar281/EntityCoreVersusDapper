@@ -9,9 +9,6 @@ namespace EntityCoreVersusDapper.Database
 {
     public class EfDbContext : DbContext
     {
-        private const int QUANTIDADE_CATEGORIAS = 10; //20
-        private const int QUANTIDADE_BLOGS_POR_CATEGORIA = 1000; //15000
-
         private readonly string _connectionString;
         public EfDbContext(string connectionString)
         {
@@ -19,7 +16,6 @@ namespace EntityCoreVersusDapper.Database
         }
 
         public DbSet<Blog> Blogs { get; set; }
-        public DbSet<BlogCategory> BlogCategories { get; set; }
         public DbSet<Category> Categories { get; set; }
 
 
@@ -35,16 +31,16 @@ namespace EntityCoreVersusDapper.Database
             optionsBuilder.UseSqlServer(_connectionString);
         }
 
-        public async Task CreateDatabase()
+        public async Task CreateDatabase(int quantidadeDeCategorias, int quantidadeDeBlogsPorCategoria)
         {
             await Database.EnsureCreatedAsync();
-            await SeedData();
+            await SeedData(quantidadeDeCategorias, quantidadeDeBlogsPorCategoria);
         }
 
-        public async Task SeedData()
+        private async Task SeedData(int quantidadeDeCategorias, int quantidadeDeBlogsPorCategoria)
         {
 
-            for (int i = 0; i < QUANTIDADE_CATEGORIAS; i++)
+            for (int i = 0; i < quantidadeDeCategorias; i++)
             {
                 Category category = new()
                 {
@@ -52,7 +48,7 @@ namespace EntityCoreVersusDapper.Database
                     Slug = $"categoria-{i:D3}"
                 };
                 Categories.Add(category);
-                for (int j = 0; j < QUANTIDADE_BLOGS_POR_CATEGORIA; j++)
+                for (int j = 0; j < quantidadeDeBlogsPorCategoria; j++)
                 {
                     Blogs.Add(new Blog()
                     {

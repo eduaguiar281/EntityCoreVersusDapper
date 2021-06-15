@@ -14,9 +14,10 @@ namespace EntityCoreVersusDapper.Database
         private readonly IDockerClient _dockerClient = DockerClientBuilder.Build();
         private readonly DockerRegistries _dockerRegistries;
         private readonly SqlServerDockerSettings _settings;
+        private readonly TesteSettings _testeSettings;
         private EfDbContext _context;
 
-        public DatabaseHelper()
+        public DatabaseHelper(SqlServerDockerSettings sqlServerDockerSettings, TesteSettings testeSettings)
         {
             _dockerRegistries = new DockerRegistries();
 
@@ -25,8 +26,8 @@ namespace EntityCoreVersusDapper.Database
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            _settings = configuration.GetSection("SqlServerDockerSettings").Get<SqlServerDockerSettings>()
-                        ?? SqlServerDockerSettings.Default;
+            _settings = sqlServerDockerSettings;
+            _testeSettings = configuration.GetSection(nameof(TesteSettings)).Get<TesteSettings>();
             _dockerRegistries.RegisterSqlServer2019(_dockerClient, _settings);
         }
 
@@ -38,13 +39,30 @@ namespace EntityCoreVersusDapper.Database
         {
             await _dockerRegistries.RunAsync();
             _context = new EfDbContext(_settings.GetDatabaseConnectionString());
-            await _context.CreateDatabase();
+            await _context.CreateDatabase(_testeSettings.QuantidadeDeCategorias, _testeSettings.QuantidadeDeBlogsPorCategoria);
         }
+
 
         public void Dispose()
         {
-            _context.CleanupTestsAndDropDatabaseAsync().Wait();
-            _dockerRegistries.CleanAsync().Wait();
+            Dispose(true);
+            GC.SuppressFinalize(this); 
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_context != null)
+                {
+                    _context.CleanupTestsAndDropDatabaseAsync().Wait();
+                }
+
+                if (_dockerRegistries != null)
+                {
+                    _dockerRegistries.CleanAsync().Wait();
+                }
+            }
         }
     }
 }
